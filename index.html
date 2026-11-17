@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Name · Place · Animal · Thing</title>
+<meta name="theme-color" content="#fbf7ee">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#fbf7ee; --line:#dfe7f3; --margin:#ee8b84; --ink:#1f2a44; --ink-soft:#5b6680;
+    --red:#e2574c; --yellow:#ffd84d; --green:#2f9e6e; --blue:#3b6fd8; --card:#ffffff;
+    --radius:16px; --shadow:0 2px 0 rgba(31,42,68,.12), 0 8px 24px rgba(31,42,68,.08);
+    --hand:'Caveat', 'Segoe Print', 'Bradley Hand', cursive;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{
+    font-family:'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color:var(--ink);
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(90deg, transparent 38px, var(--margin) 38px, var(--margin) 40px, transparent 40px),
+      repeating-linear-gradient(180deg, transparent 0 31px, var(--line) 31px 32px);
+    background-attachment:fixed;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #app{max-width:760px;margin:0 auto;padding:18px 16px 60px 52px;min-height:100vh}
+  @media (max-width:520px){ #app{padding-left:48px;padding-right:12px} }
+  h1,h2,h3{margin:0}
+  .brand{font-family:var(--hand);font-size:clamp(40px,9vw,64px);line-height:.95;letter-spacing:.5px}
+  .brand span{display:inline-block}
+  .brand .n{color:var(--blue)} .brand .p{color:var(--green)} .brand .a{color:var(--red)} .brand .t{color:#c08a00}
+  .muted{color:var(--ink-soft)}
+  .small{font-size:14px}
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin:14px 0;border:2px solid var(--ink)}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .spread{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .stack>*+*{margin-top:10px}
+  label.lbl{font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);display:block;margin-bottom:6px}
+  input[type=text]{
+    width:100%;font:inherit;font-size:18px;padding:12px 14px;border-radius:12px;border:2px solid var(--ink);
+    background:#fff;color:var(--ink);outline:none;transition:box-shadow .15s
+  }
+  input[type=text]:focus{box-shadow:0 0 0 4px rgba(59,111,216,.25)}
+  input[type=text]:disabled{background:#f2f0ea;color:var(--ink-soft)}
+  .btn{
+    font:inherit;font-weight:800;font-size:17px;border:2px solid var(--ink);border-radius:12px;padding:12px 18px;
+    background:#fff;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--ink);transition:transform .06s, box-shadow .06s;
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;user-select:none
+  }
+  .btn:active:not(:disabled){transform:translateY(3px);box-shadow:0 0 0 var(--ink)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.primary{background:var(--yellow)}
+  .btn.go{background:var(--green);color:#fff}
+  .btn.danger{background:var(--red);color:#fff}
+  .btn.ghost{background:transparent;box-shadow:none;border-color:transparent;text-decoration:underline;padding:8px 10px}
+  .btn.block{width:100%}
+  .btn.sm{font-size:14px;padding:7px 12px;border-radius:10px;box-shadow:0 2px 0 var(--ink)}
+  .divider{display:flex;align-items:center;gap:10px;color:var(--ink-soft);font-weight:800;margin:6px 0}
+  .divider::before,.divider::after{content:"";flex:1;height:2px;background:var(--line)}
+  .code-input{text-transform:uppercase;letter-spacing:.3em;font-weight:900;text-align:center}
+  .banner{background:#fff6cf;border:2px dashed #c08a00;border-radius:12px;padding:10px 12px;font-size:14px;margin-top:12px}
+  .roomcode{font-family:var(--hand);font-size:44px;line-height:1;letter-spacing:.12em;color:var(--red)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    font:inherit;font-weight:700;font-size:15px;padding:7px 12px;border-radius:999px;border:2px solid var(--ink);
+    background:#fff;color:var(--ink);cursor:pointer
+  }
+  .chip.on{background:var(--ink);color:#fff}
+  .chip[disabled]{cursor:default}
+  .chip .x{margin-left:6px;opacity:.7}
+  .seg{display:inline-flex;border:2px solid var(--ink);border-radius:12px;overflow:hidden;flex-wrap:wrap}
+  .seg button{font:inherit;font-weight:800;font-size:15px;border:0;padding:8px 12px;background:#fff;color:var(--ink);cursor:pointer;border-right:2px solid var(--ink)}
+  .seg button:last-child{border-right:0}
+  .seg button.on{background:var(--yellow)}
+  .seg button:disabled{cursor:default}
+  .players{display:flex;flex-wrap:wrap;gap:8px}
+  .pl{display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;border-radius:999px;background:#fff;border:2px solid var(--ink);font-weight:800}
+  .pl.off{opacity:.4}
+  .av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;font-size:14px;flex:none}
+  .crown{font-size:14px}
+  .letter-tile{
+    width:96px;height:96px;border-radius:20px;background:var(--yellow);border:3px solid var(--ink);box-shadow:0 5px 0 var(--ink);
+    display:grid;place-items:center;font-size:64px;font-weight:900;flex:none
+  }
+  .letter-tile.pop{animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes pop{0%{transform:scale(.3) rotate(-20deg)}100%{transform:scale(1) rotate(0)}}
+  .timer{font-family:var(--hand);font-size:44px;line-height:1;min-width:84px;text-align:right}
+  .timer.low{color:var(--red);animation:pulse 1s infinite}
+  @keyframes pulse{50%{transform:scale(1.12)}}
+  .field{position:relative;margin-bottom:12px}
+  .field .state{position:absolute;right:12px;top:38px;font-weight:900;font-size:18px}
+  .field .state.ok{color:var(--green)} .field .state.bad{color:var(--red)}
+  .field input{padding-right:40px}
+  .overlay{
+    position:fixed;inset:0;background:rgba(251,247,238,.88);backdrop-filter:blur(2px);display:grid;place-items:center;z-index:20;text-align:center;padding:20px
+  }
+  .big{font-family:var(--hand);font-size:clamp(70px,22vw,150px);line-height:1}
+  .stamp{font-family:var(--hand);font-size:clamp(64px,18vw,120px);color:var(--red);transform:rotate(-8deg);border:6px solid var(--red);border-radius:18px;padding:0 24px;animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+  .progress{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .progress .pl{font-size:13px;padding:3px 10px 3px 3px}
+  .progress .av{width:22px;height:22px;font-size:11px}
+  .done-dot{color:var(--green)}
+  .cat-card h3{font-size:22px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .ans-row{display:grid;grid-template-columns:minmax(80px,auto) 1fr auto auto;gap:10px;align-items:center;padding:8px 0;border-top:1px dashed var(--line)}
+  .ans-row:first-of-type{border-top:0}
+  .ans-name{font-weight:800;font-size:14px;display:flex;align-items:center;gap:6px;min-width:0}
+  .ans-name span.nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ans-text{font-family:var(--hand);font-size:26px;line-height:1.05;word-break:break-word}
+  .ans-text.bad{text-decoration:line-through;text-decoration-color:var(--red);text-decoration-thickness:3px;color:var(--ink-soft)}
+  .ans-text.empty{font-family:inherit;font-size:14px;color:var(--ink-soft);font-style:italic}
+  .pts{font-weight:900;min-width:44px;text-align:center;border-radius:10px;padding:4px 6px;border:2px solid var(--ink);background:#fff;font-size:15px}
+  .pts.p10{background:#c9f0dc} .pts.p5{background:#fff1b8} .pts.p0{background:#f3f1ec;color:var(--ink-soft)}
+  .vote{font:inherit;font-weight:800;font-size:13px;border:2px solid var(--red);color:var(--red);background:#fff;border-radius:10px;padding:5px 8px;cursor:pointer;white-space:nowrap}
+  .vote.on{background:var(--red);color:#fff}
+  .vote:disabled{border-color:transparent;background:transparent;color:var(--ink-soft);cursor:default}
+  .table-wrap{overflow-x:auto;margin:0 -6px;padding:0 6px}
+  table{border-collapse:collapse;width:100%;min-width:420px}
+  th,td{padding:8px 8px;text-align:left;border-bottom:1px dashed var(--line);vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft)}
+  td .a{font-family:var(--hand);font-size:22px;line-height:1}
+  td .s{font-size:12px;font-weight:800;color:var(--ink-soft)}
+  td.tot{font-weight:900;font-size:18px}
+  .lb-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px dashed var(--line)}
+  .lb-row:first-child{border-top:0}
+  .rank{font-family:var(--hand);font-size:32px;width:34px;text-align:center}
+  .lb-name{flex:1;font-weight:800;font-size:18px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lb-score{font-weight:900;font-size:22px}
+  .delta{font-size:13px;font-weight:800;color:var(--green);margin-left:6px}
+  .podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;margin:16px 0 6px}
+  .pod{text-align:center;flex:1;max-width:150px}
+  .pod .block{border:3px solid var(--ink);border-bottom:0;border-radius:14px 14px 0 0;display:grid;place-items:center;font-family:var(--hand);font-size:44px}
+  .pod .who{font-weight:900;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pod .sc{font-weight:800;color:var(--ink-soft);font-size:14px;margin-bottom:6px}
+  .mark-row{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px dashed var(--line)}
+  .mark-q{min-width:0;flex:1}
+  .ptsel{display:flex;border:2px solid var(--ink);border-radius:12px;overflow:hidden;flex:none}
+  .ptsel button{font:inherit;font-weight:900;font-size:17px;width:46px;height:44px;border:0;border-right:2px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer}
+  .ptsel button:last-child{border-right:0}
+  .ptsel button.on.p10{background:#7fd6a8} .ptsel button.on.p5{background:var(--yellow)} .ptsel button.on.p0{background:#f2a39c}
+  .help li{margin:4px 0}
+  #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(120px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-weight:800;transition:transform .25s, visibility .25s;z-index:50;max-width:90vw;text-align:center;visibility:hidden}
+  #toast.show{transform:translateX(-50%) translateY(0);visibility:visible}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+  .tag{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;background:var(--ink);color:#fff;border-radius:6px;padding:3px 8px}
+  .sticky-bottom{position:sticky;bottom:10px;z-index:5;margin-top:8px}
+  .confetti{position:fixed;top:-20px;width:10px;height:14px;z-index:30;animation:fall linear forwards;pointer-events:none}
+  @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+
+<script type="module">
+/* =====================================================================
+   1) PASTE YOUR FIREBASE CONFIG HERE  (Firebase console → Project
+      settings → Your apps → Web app → SDK setup and configuration)
+      Leave it empty to play in LOCAL TEST MODE (several tabs, one browser).
+   ===================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyABhfkC9dCw3lUc_AFGOP5gpn_1t-spEFA",
+  authDomain: "name-place-animal-thing-9cba3.firebaseapp.com",
+  databaseURL: "https://name-place-animal-thing-9cba3-default-rtdb.firebaseio.com",
+  projectId: "name-place-animal-thing-9cba3",
+  storageBucket: "name-place-animal-thing-9cba3.firebasestorage.app",
+  messagingSenderId: "822313054024",
+  appId: "1:822313054024:web:0674c856df6e13c3e60d7d"
+};
+const FIREBASE_VERSION = "10.12.2";
+const ROOT = 'rooms/';   // database folder for this game (change if it clashes with another game)
+
+/* ============================ Game constants ============================ */
+const DEFAULT_CATS = ['Name', 'Place', 'Animal', 'Thing'];
+const EXTRA_CATS = ['Food', 'Movie', 'Country', 'Colour', 'Brand', 'Job', 'Sport', 'Fruit / Veg', 'Celebrity', 'Song', 'Body part', 'Car'];
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const HARD = 'QUVXYZ';
+const AV_COLORS = ['#3b6fd8', '#e2574c', '#2f9e6e', '#c08a00', '#8a4fd8', '#d84f9a', '#1d9bb0', '#e07a1f'];
+const COUNTDOWN_MS = 3600;   // 3-2-1 before letter shows
+const STOP_GRACE_MS = 2200;  // time for everyone's answers to arrive after STOP
+
+const defaultSettings = () => ({ categories: [...DEFAULT_CATS], custom: [], rounds: 5, timer: 90, stopMode: 'first', skipHard: true, scoring: 'swap' });
+
+/* ============================ Backend layer ============================ */
+// Same tiny API for Firebase and for the local (BroadcastChannel) test mode.
+let backend;
+
+async function initBackend() {
+  if (firebaseConfig && firebaseConfig.databaseURL) {
+    const base = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
+    const { initializeApp } = await import(`${base}/firebase-app.js`);
+    const fb = await import(`${base}/firebase-database.js`);
+    const app = initializeApp(firebaseConfig);
+    const db = fb.getDatabase(app);
+    let offset = 0;
+    fb.onValue(fb.ref(db, '.info/serverTimeOffset'), s => { offset = s.val() || 0; });
+    backend = {
+      mode: 'firebase',
+      now: () => Date.now() + offset,
+      get: async p => (await fb.get(fb.ref(db, p))).val(),
+      set: (p, v) => fb.set(fb.ref(db, p), v),
+      update: (p, v) => fb.update(fb.ref(db, p), v),
+      on: (p, cb) => fb.onValue(fb.ref(db, p), s => cb(s.val())),
+      onDisconnectSet: (p, v) => fb.onDisconnect(fb.ref(db, p)).set(v),
+    };
+  } else {
+    backend = makeLocalBackend();
+  }
+}
+
+function makeLocalBackend() {
+  const KEY = 'npat-local-db';
+  const ch = 'BroadcastChannel' in window ? new BroadcastChannel('npat-local') : null;
+  const subs = new Set();
+  const read = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
+  const parts = p => p.split('/').filter(Boolean);
+  const getPath = (t, p) => { let o = t; for (const k of parts(p)) { if (o == null || typeof o !== 'object') return null; o = o[k]; } return o === undefined ? null : o; };
+  const prune = o => { if (o && typeof o === 'object') { for (const k of Object.keys(o)) { prune(o[k]); if (o[k] === null || (typeof o[k] === 'object' && !Object.keys(o[k]).length)) delete o[k]; } } return o; };
+  const setPath = (t, p, v) => {
+    const ks = parts(p); let o = t;
+    for (let i = 0; i < ks.length - 1; i++) { if (typeof o[ks[i]] !== 'object' || o[ks[i]] === null) o[ks[i]] = {}; o = o[ks[i]]; }
+    if (v === null || v === undefined) delete o[ks[ks.length - 1]]; else o[ks[ks.length - 1]] = JSON.parse(JSON.stringify(v));
+  };
+  const notify = () => {
+    const t = read();
+    subs.forEach(s => { const v = getPath(t, s.p); const j = JSON.stringify(v); if (j !== s.last) { s.last = j; s.cb(v === null ? null : JSON.parse(j)); } });
+  };
+  const commit = t => { localStorage.setItem(KEY, JSON.stringify(prune(t))); ch && ch.postMessage(1); setTimeout(notify, 0); return Promise.resolve(); };
+  ch && (ch.onmessage = notify);
+  window.addEventListener('storage', e => { if (e.key === KEY) notify(); });
+  return {
+    mode: 'local',
+    now: () => Date.now(),
+    get: async p => getPath(read(), p),
+    set: (p, v) => { const t = read(); setPath(t, p, v); return commit(t); },
+    update: (p, obj) => { const t = read(); for (const [k, v] of Object.entries(obj)) setPath(t, p + '/' + k, v); return commit(t); },
+    on: (p, cb) => { const s = { p, cb, last: undefined }; subs.add(s); setTimeout(notify, 0); return () => subs.delete(s); },
+    onDisconnectSet: (p, v) => { window.addEventListener('pagehide', () => { const t = read(); if (getPath(t, p.split('/').slice(0, -1).join('/'))) { setPath(t, p, v); localStorage.setItem(KEY, JSON.stringify(t)); ch && ch.postMessage(1); } }); },
+  };
+}
+
+/* ============================ Local identity ============================ */
+const rid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const store = {
+  get id() { let v = sessionStorage.getItem('npat-id'); if (!v) { v = rid(); sessionStorage.setItem('npat-id', v); } return v; },
+  get name() { return localStorage.getItem('npat-name') || ''; },
+  set name(v) { localStorage.setItem('npat-name', v); },
+  get room() { return sessionStorage.getItem('npat-room'); },
+  set room(v) { v ? sessionStorage.setItem('npat-room', v) : sessionStorage.removeItem('npat-room'); },
+};
+const ME = store.id;
+
+/* ============================ App state ============================ */
+let code = null;        // current room code
+let room = null;        // live room snapshot
+let unsub = null;
+let mounted = '';       // which screen is currently mounted
+let lastState = '';
+let local = { round: 0, answers: {}, flushed: false, saveTimer: null };
+
+const $ = (s, el = document) => el.querySelector(s);
+const app = $('#app');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const rk = r => 'r' + r;
+
+function toast(msg, ms = 2200) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+/* ============================ Helpers ============================ */
+const roomPath = (p = '') => `${ROOT}${code}${p ? '/' + p : ''}`;
+const players = () => Object.entries(room?.players || {}).map(([id, p]) => ({ id, ...p })).sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+const online = () => players().filter(p => p.online);
+function hostId() {
+  const ps = room?.players || {};
+  if (ps[room.host]?.online) return room.host;
+  return online()[0]?.id || room.host;
+}
+const isHost = () => room && hostId() === ME;
+const colorFor = id => { let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return AV_COLORS[h % AV_COLORS.length]; };
+const avatar = p => `<span class="av" style="background:${colorFor(p.id)}">${esc((p.name || '?').trim()[0]?.toUpperCase() || '?')}</span>`;
+const nameOf = id => room?.players?.[id]?.name || 'Someone';
+const cats = () => room.settings.categories;
+const norm = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const startsOk = (s, L) => { const n = norm(s); return n.length > 0 && !!L && n[0] === L.toLowerCase(); };
+
+function genCode() { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; let c = ''; for (let i = 0; i < 4; i++) c += A[Math.floor(Math.random() * A.length)]; return c; }
+
+function participants(r) {
+  const ans = room.answers?.[rk(r)] || {};
+  const asg = room.assign?.[rk(r)] || {};
+  return players().filter(p => p.online || ans[p.id] || asg[p.id]);
+}
+
+const scoringMode = () => room.settings.scoring || 'swap';
+
+// Who marks whose sheet this round: { targetId: markerId }. Rotates each round so you mark someone new.
+function markerMap(r) {
+  const ids = participants(r).map(p => p.id), n = ids.length, m = {};
+  if (n < 2) { ids.forEach(id => m[id] = id); return m; }
+  const off = ((r - 1) % (n - 1)) + 1;
+  ids.forEach((id, i) => { m[ids[(i + off) % n]] = id; });
+  return m;
+}
+
+// Score one round from the live data.
+// Suggested points: unique valid = 10, same as someone else = 5, blank/wrong letter = 0.
+// "swap" mode: the assigned marker's choice overrides the suggestion.
+// "vote" mode: an answer is out if most of the other players vote ✗.
+function computeRound(r) {
+  const L = room.letter, swap = scoringMode() === 'swap';
+  const ans = room.answers?.[rk(r)] || {};
+  const rej = room.rejects?.[rk(r)] || {};
+  const marks = room.marks?.[rk(r)] || {};
+  const ps = participants(r);
+  const voters = Math.max(online().length, 1);
+  const out = {};
+  ps.forEach(p => out[p.id] = { t: 0 });
+  cats().forEach((_, i) => {
+    const k = 'c' + i, groups = {};
+    ps.forEach(p => {
+      const a = String(ans[p.id]?.[k] || '').trim();
+      const votes = Object.keys(rej[p.id]?.[k] || {}).filter(v => v !== p.id);
+      const rejected = !swap && votes.length > 0 && votes.length * 2 > (voters - 1);
+      const letterOk = startsOk(a, L);
+      const ok = !!a && letterOk && !rejected;
+      out[p.id][k] = { a, votes, rejected, letterOk, ok, pts: 0, sug: 0, same: [], marked: false };
+      if (!!a && letterOk) (groups[norm(a)] ||= []).push(p.id);
+    });
+    Object.values(groups).forEach(list => list.forEach(id => {
+      const c = out[id][k];
+      c.same = list.filter(x => x !== id);
+      c.sug = list.length === 1 ? 10 : 5;
+    }));
+    // in vote mode, duplicates only count among answers that survived the vote
+    ps.forEach(p => {
+      const c = out[p.id][k];
+      if (swap) {
+        const m = marks[p.id]?.[k];
+        if (m === 0 || m === 5 || m === 10) { c.pts = m; c.marked = true; } else c.pts = c.sug;
+      } else if (c.ok) {
+        const others = c.same.filter(id => out[id][k].ok);
+        c.pts = others.length ? 5 : 10;
+      }
+      out[p.id].t += c.pts;
+    });
+  });
+  return out;
+}
+
+function totals() {
+  const t = {}; players().forEach(p => t[p.id] = 0);
+  Object.values(room.roundScores || {}).forEach(rs => Object.entries(rs).forEach(([id, s]) => { t[id] = (t[id] || 0) + (s.t || 0); }));
+  return t;
+}
+function leaderboard() {
+  const t = totals();
+  return players().filter(p => p.online || t[p.id] > 0).map(p => ({ ...p, score: t[p.id] || 0 })).sort((a, b) => b.score - a.score);
+}
+function rankOf(list, i) { let r = i; while (r > 0 && list[r - 1].score === list[i].score) r--; return r + 1; }
+
+/* ============================ Room actions ============================ */
+async function createRoom(name) {
+  let c, tries = 0;
+  do { c = genCode(); tries++; } while (tries < 10 && await backend.get(ROOT + c));
+  const now = backend.now();
+  await backend.set(ROOT + c, {
+    createdAt: now, host: ME, state: 'lobby', round: 0, usedLetters: '', settings: defaultSettings(),
+    players: { [ME]: { name, joinedAt: now, online: true } },
+  });
+  enterRoom(c);
+}
+
+async function joinRoom(c, name, silent = false) {
+  c = (c || '').toUpperCase().trim();
+  if (c.length !== 4) { if (!silent) toast('Room codes are 4 letters'); return false; }
+  const r = await backend.get(ROOT + c);
+  if (!r) { if (!silent) toast(`Room ${c} doesn't exist`); return false; }
+  const mine = r.players?.[ME];
+  let final = name;
+  const taken = Object.entries(r.players || {}).filter(([id, p]) => id !== ME && p.online).map(([, p]) => p.name.toLowerCase());
+  let n = 2; while (taken.includes(final.toLowerCase())) final = `${name} ${n++}`;
+  await backend.update(ROOT + c + '/players/' + ME, { name: final, joinedAt: mine?.joinedAt || backend.now(), online: true });
+  enterRoom(c);
+  return true;
+}
+
+function enterRoom(c) {
+  code = c; store.room = c;
+  history.replaceState(null, '', '#' + c);
+  backend.onDisconnectSet(roomPath(`players/${ME}/online`), false);
+  unsub && unsub();
+  unsub = backend.on(ROOT + c, v => {
+    if (!v) { toast('That room has closed'); leaveLocal(); return; }
+    room = v; render();
+  });
+}
+
+async function leaveRoom() {
+  if (!code) return;
+  if (room?.state === 'lobby' && !(totals()[ME] > 0)) await backend.set(roomPath(`players/${ME}`), null);
+  else await backend.set(roomPath(`players/${ME}/online`), false);
+  leaveLocal();
+}
+function leaveLocal() {
+  unsub && unsub(); unsub = null; code = null; room = null; store.room = null; mounted = ''; lastState = '';
+  history.replaceState(null, '', location.pathname);
+  renderHome();
+}
+
+const saveSettings = patch => backend.update(roomPath('settings'), patch);
+
+function pickLetter() {
+  const s = room.settings;
+  let pool = LETTERS.split('').filter(l => !(s.skipHard && HARD.includes(l)));
+  let left = pool.filter(l => !(room.usedLetters || '').includes(l));
+  if (!left.length) left = pool;
+  return left[Math.floor(Math.random() * left.length)];
+}
+
+async function startRound() {
+  const L = pickLetter();
+  const round = (room.round || 0) + 1;
+  const startsAt = backend.now() + COUNTDOWN_MS;
+  const used = (room.usedLetters || '');
+  await backend.update(roomPath(), {
+    state: 'playing', round, letter: L,
+    usedLetters: (used.length >= 26 ? '' : used) + L,
+    startsAt, endsAt: room.settings.timer ? startsAt + room.settings.timer * 1000 : 0,
+    stoppedBy: null, stopAt: null,
+  });
+}
+
+let stopSent = 0;
+async function callStop(by) {
+  if (room.state !== 'playing' || stopSent === room.round) return;
+  stopSent = room.round;
+  await flushAnswers();
+  await backend.update(roomPath(), { state: 'stopping', stoppedBy: by, stopAt: backend.now() });
+}
+
+async function flushAnswers() {
+  if (!room || local.round !== room.round) return;
+  clearTimeout(local.saveTimer);
+  const clean = {};
+  Object.entries(local.answers).forEach(([k, v]) => { const t = String(v || '').trim().slice(0, 60); if (t) clean[k] = t; });
+  await backend.set(roomPath(`answers/${rk(room.round)}/${ME}`), Object.keys(clean).length ? clean : null);
+}
+
+async function lockScores() {
+  const res = computeRound(room.round);
+  const rs = {};
+  Object.entries(res).forEach(([id, s]) => {
+    rs[id] = { t: s.t };
+    cats().forEach((_, i) => rs[id]['c' + i] = s['c' + i].pts);
+  });
+  await backend.update(roomPath(), { [`roundScores/${rk(room.round)}`]: rs, state: 'results' });
+}
+
+async function playAgain() {
+  await backend.update(roomPath(), { state: 'lobby', round: 0, usedLetters: '', letter: null, answers: null, rejects: null, marks: null, assign: null, roundScores: null, startsAt: null, endsAt: null, stoppedBy: null, stopAt: null });
+}
+
+/* ============================ Rendering ============================ */
+function render() {
+  if (!room) return;
+  const key = room.state === 'playing' || room.state === 'stopping' ? `play-${room.round}` : room.state === 'lobby' ? 'lobby' : `${room.state}-${room.round}`;
+  const stateChanged = room.state !== lastState;
+  lastState = room.state;
+  if (key !== mounted || (room.state !== 'lobby' && room.state !== 'playing' && room.state !== 'stopping')) {
+    const fresh = key !== mounted;
+    mounted = key;
+    ({ lobby: mountLobby, playing: mountPlay, stopping: mountPlay, review: renderReview, results: renderResults, final: renderFinal }[room.state] || mountLobby)(fresh);
+  }
+  if (room.state === 'lobby') updateLobby();
+  if (room.state === 'playing' || room.state === 'stopping') updatePlay(stateChanged);
+}
+
+/* ---------- Home ---------- */
+function renderHome() {
+  mounted = 'home';
+  const hashCode = (location.hash || '').replace('#', '').toUpperCase().slice(0, 4);
+  app.innerHTML = `
+    <h1 class="brand"><span class="n">Name</span> <span class="p">Place</span><br><span class="a">Animal</span> <span class="t">Thing</span></h1>
+    <p class="muted">The classic pen-and-paper word game, online with friends.</p>
+    <div class="card stack">
+      <div>
+        <label class="lbl" for="nm">Your name</label>
+        <input type="text" id="nm" maxlength="16" placeholder="e.g. Priya" value="${esc(store.name)}" autocomplete="nickname">
+      </div>
+      <button class="btn primary block" data-act="create">✏&#xFE0F; Create a new room</button>
+      <div class="divider">or join one</div>
+      <div class="row" style="flex-wrap:nowrap">
+        <input type="text" id="code" class="code-input" maxlength="4" placeholder="CODE" value="${esc(hashCode)}" autocomplete="off" autocapitalize="characters">
+        <button class="btn go" data-act="join" style="flex:none">Join</button>
+      </div>
+      ${backend.mode === 'local' ? `<div class="banner"><b>Local test mode.</b> No Firebase config yet, so rooms only exist in this browser. Open this page in a few tabs to try it out. Add your Firebase config to <code>index.html</code> to play across devices.</div>` : ''}
+    </div>
+    <details class="card help">
+      <summary><b>How to play</b></summary>
+      <ul>
+        <li>Everyone gets the same random letter.</li>
+        <li>Fill in a word for every category starting with that letter: a Name, a Place, an Animal, a Thing…</li>
+        <li>First to fill everything can hit <b>STOP</b> and the round ends for everyone (or play until the timer runs out).</li>
+        <li><b>Swap sheets:</b> everyone is handed another player's answers to mark 10, 5 or 0 (or switch to a group vote in settings).</li>
+        <li><b>10 pts</b> for a unique answer, <b>5 pts</b> if someone else wrote the same thing, <b>0</b> for blank or wrong letter.</li>
+      </ul>
+    </details>`;
+  const nm = $('#nm'), cd = $('#code');
+  const getName = () => { const v = nm.value.trim().slice(0, 16); if (!v) { toast('Pop your name in first'); nm.focus(); return null; } store.name = v; return v; };
+  $('[data-act=create]').onclick = async e => { const n = getName(); if (!n) return; e.target.disabled = true; try { await createRoom(n); } catch (err) { console.error(err); toast('Could not create room: ' + err.message); e.target.disabled = false; } };
+  const join = async e => { const n = getName(); if (!n) return; const b = $('[data-act=join]'); b.disabled = true; try { if (!await joinRoom(cd.value, n)) b.disabled = false; } catch (err) { console.error(err); toast('Could not join: ' + err.message); b.disabled = false; } };
+  $('[data-act=join]').onclick = join;
+  cd.addEventListener('input', () => { cd.value = cd.value.toUpperCase().replace(/[^A-Z]/g, ''); });
+  cd.addEventListener('keydown', e => { if (e.key === 'Enter') join(); });
+  if (!store.name) nm.focus(); else if (hashCode) $('[data-act=join]').focus();
+}
+
+/* ---------- Lobby ---------- */
+function mountLobby() {
+  app.innerHTML = `
+    <div class="topbar"><span class="tag">Lobby</span><button class="btn ghost small" data-act="leave">Leave room</button></div>
+    <div class="card">
+      <div class="spread">
+        <div><label class="lbl">Room code</label><div class="roomcode" id="rc">${esc(code)}</div></div>
+        <button class="btn sm" data-act="invite">🔗 Copy invite link</button>
+      </div>
+      <p class="muted small" style="margin:10px 0 0">Friends open the game and enter this code, or use your invite link.</p>
+    </div>
+    <div class="card"><label class="lbl" id="pcount">Players</label><div class="players" id="plist"></div></div>
+    <div class="card stack" id="settings"></div>
+    <div id="custom-wrap" class="card" style="display:none">
+      <label class="lbl" for="customcat">Add your own category</label>
+      <div class="row" style="flex-wrap:nowrap"><input type="text" id="customcat" maxlength="18" placeholder="e.g. Superhero"><button class="btn sm" data-act="addcat" style="flex:none">Add</button></div>
+    </div>
+    <div class="sticky-bottom" id="startwrap"></div>`;
+  $('[data-act=leave]').onclick = leaveRoom;
+  $('[data-act=invite]').onclick = async () => {
+    const url = location.origin + location.pathname + '#' + code;
+    try { await navigator.clipboard.writeText(url); toast('Invite link copied'); } catch { prompt('Copy this link:', url); }
+  };
+  const addCat = () => {
+    const inp = $('#customcat'); const v = inp.value.trim().replace(/[.#$\[\]\/]/g, '').slice(0, 18);
+    if (!v) return;
+    const s = room.settings, all = [...DEFAULT_CATS, ...EXTRA_CATS, ...(s.custom || [])];
+    if (all.some(c => c.toLowerCase() === v.toLowerCase())) { toast('That category already exists'); return; }
+    if (s.categories.length >= 10) { toast('10 categories max'); return; }
+    saveSettings({ custom: [...(s.custom || []), v], categories: [...s.categories, v] });
+    inp.value = '';
+  };
+  $('[data-act=addcat]').onclick = addCat;
+  $('#customcat').addEventListener('keydown', e => { if (e.key === 'Enter') addCat(); });
+
+  $('#settings').addEventListener('click', e => {
+    const b = e.target.closest('[data-set]'); if (!b || !isHost()) return;
+    const s = room.settings, [k, v] = [b.dataset.set, b.dataset.v];
+    if (k === 'cat') {
+      if (e.target.closest('.x')) { saveSettings({ custom: (s.custom || []).filter(c => c !== v), categories: s.categories.filter(c => c !== v) }); return; }
+      const on = s.categories.includes(v);
+      if (on && s.categories.length <= 2) { toast('Keep at least 2 categories'); return; }
+      if (!on && s.categories.length >= 10) { toast('10 categories max'); return; }
+      const order = [...DEFAULT_CATS, ...EXTRA_CATS, ...(s.custom || [])];
+      saveSettings({ categories: on ? s.categories.filter(c => c !== v) : order.filter(c => c === v || s.categories.includes(c)) });
+    }
+    if (k === 'rounds') saveSettings({ rounds: +v });
+    if (k === 'timer') saveSettings({ timer: +v, ...(+v === 0 ? { stopMode: 'first' } : {}) });
+    if (k === 'stopMode') saveSettings({ stopMode: v });
+    if (k === 'skipHard') saveSettings({ skipHard: !s.skipHard });
+    if (k === 'scoring') saveSettings({ scoring: v });
+  });
+}
+
+function updateLobby() {
+  const host = hostId(), ps = players().filter(p => p.online), s = room.settings, h = isHost();
+  $('#pcount').textContent = `Players (${ps.length})`;
+  $('#plist').innerHTML = ps.map(p => `<span class="pl">${avatar(p)}${esc(p.name)}${p.id === ME ? ' <span class="muted small">(you)</span>' : ''}${p.id === host ? ' <span class="crown" title="Host">👑</span>' : ''}</span>`).join('');
+  const seg = (k, opts) => `<div class="seg">${opts.map(([v, l]) => `<button data-set="${k}" data-v="${v}" class="${String(s[k]) === String(v) ? 'on' : ''}" ${h ? '' : 'disabled'}>${l}</button>`).join('')}</div>`;
+  const allCats = [...DEFAULT_CATS, ...EXTRA_CATS, ...(s.custom || [])];
+  const shownCats = h ? allCats : s.categories;
+  $('#settings').innerHTML = `
+    <div class="spread"><h3>Game settings</h3>${h ? '<span class="muted small">You\'re the host 👑</span>' : `<span class="muted small">${esc(nameOf(host))} is choosing</span>`}</div>
+    <div><label class="lbl">Categories (${s.categories.length})</label><div class="chips">${shownCats.map(c => `<button class="chip ${s.categories.includes(c) ? 'on' : ''}" data-set="cat" data-v="${esc(c)}" ${h ? '' : 'disabled'}>${esc(c)}${h && (s.custom || []).includes(c) ? '<span class="x" title="Remove">✕</span>' : ''}</button>`).join('')}</div></div>
+    <div><label class="lbl">Rounds</label>${seg('rounds', [[3, '3'], [5, '5'], [8, '8'], [10, '10'], [26, '26']])}</div>
+    <div><label class="lbl">Time per round</label>${seg('timer', [[45, '45s'], [60, '60s'], [90, '90s'], [120, '2 min'], [0, 'No limit']])}</div>
+    <div><label class="lbl">Round ends when</label>${seg('stopMode', s.timer ? [['first', 'Someone hits STOP'], ['timer', 'Timer runs out']] : [['first', 'Someone hits STOP']])}</div>
+    <div><label class="lbl">Letters</label><div class="seg"><button data-set="skipHard" class="${s.skipHard ? 'on' : ''}" ${h ? '' : 'disabled'}>Skip Q U V X Y Z</button><button data-set="skipHard" class="${s.skipHard ? '' : 'on'}" ${h ? '' : 'disabled'}>All 26 letters</button></div></div>
+    <div><label class="lbl">Scoring</label>${seg('scoring', [['swap', '🔄 Swap sheets'], ['vote', '🗳&#xFE0F; Group vote']])}
+      <p class="muted small" style="margin:6px 0 0">${(s.scoring || 'swap') === 'swap' ? 'Each player is handed someone else\'s sheet and gives each answer 10, 5 or 0.' : 'Everyone sees all answers and votes ✗ on ones that shouldn\'t count.'}</p></div>`;
+  $('#custom-wrap').style.display = h ? '' : 'none';
+  $('#startwrap').innerHTML = h
+    ? `<button class="btn go block" data-act="start">▶ Start game${ps.length < 2 ? ' (solo)' : ` with ${ps.length} players`}</button>`
+    : `<div class="card" style="text-align:center;margin:0"><b>Waiting for ${esc(nameOf(host))} to start…</b></div>`;
+  const st = $('[data-act=start]'); if (st) st.onclick = async () => { st.disabled = true; await startRound(); };
+}
+
+/* ---------- Playing ---------- */
+function mountPlay() {
+  if (local.round !== room.round) {
+    local = { round: room.round, answers: { ...(room.answers?.[rk(room.round)]?.[ME] || {}) }, flushed: false, saveTimer: null };
+  }
+  const s = room.settings, L = room.letter;
+  app.innerHTML = `
+    <div class="topbar"><span class="tag">Round ${room.round} of ${s.rounds}</span><button class="btn ghost small" data-act="leave">Leave</button></div>
+    <div class="card">
+      <div class="spread" style="flex-wrap:nowrap">
+        <div class="row" style="flex-wrap:nowrap">
+          <div class="letter-tile" id="tile">?</div>
+          <div><div class="muted small" style="font-weight:800">EVERYTHING STARTS WITH</div><div style="font-weight:900;font-size:22px" id="letterword">…</div></div>
+        </div>
+        <div class="timer" id="timer"></div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+    <form class="card" id="sheet" autocomplete="off" onsubmit="return false">
+      ${s.categories.map((c, i) => `
+        <div class="field">
+          <label class="lbl" for="f${i}">${esc(c)}</label>
+          <input type="text" id="f${i}" data-k="c${i}" maxlength="40" placeholder="${esc(c)} starting with ${L}…" value="${esc(local.answers['c' + i] || '')}" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="${i === s.categories.length - 1 ? 'done' : 'next'}" disabled>
+          <span class="state" id="st${i}"></span>
+        </div>`).join('')}
+    </form>
+    <div class="sticky-bottom" id="stopwrap"></div>
+    <div id="ov"></div>`;
+  $('[data-act=leave]').onclick = () => { if (confirm('Leave this game?')) leaveRoom(); };
+  const sheet = $('#sheet');
+  sheet.addEventListener('input', e => {
+    const k = e.target.dataset.k; if (!k) return;
+    local.answers[k] = e.target.value;
+    paintField(e.target);
+    clearTimeout(local.saveTimer);
+    local.saveTimer = setTimeout(flushAnswers, 450);
+    paintStop();
+  });
+  sheet.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const inputs = [...sheet.querySelectorAll('input')]; const i = inputs.indexOf(e.target);
+    if (i >= 0 && i < inputs.length - 1) inputs[i + 1].focus(); else e.target.blur();
+  });
+  sheet.querySelectorAll('input').forEach(paintField);
+  paintStop();
+}
+
+function paintField(inp) {
+  const i = inp.id.slice(1), st = $('#st' + i), v = inp.value.trim();
+  if (!st) return;
+  if (!v) { st.textContent = ''; st.className = 'state'; return; }
+  const ok = startsOk(v, room.letter);
+  st.textContent = ok ? '✓' : '✗'; st.className = 'state ' + (ok ? 'ok' : 'bad');
+  st.title = ok ? '' : `Doesn't start with ${room.letter}`;
+}
+
+function allFilled() { return cats().every((_, i) => String(local.answers['c' + i] || '').trim()); }
+
+function paintStop() {
+  const w = $('#stopwrap'); if (!w) return;
+  const s = room.settings;
+  if (room.state !== 'playing' || backend.now() < room.startsAt) { w.innerHTML = ''; return; }
+  if (s.stopMode === 'first') {
+    const ready = allFilled();
+    if (!w.firstChild || w.dataset.ready !== String(ready)) {
+      w.dataset.ready = String(ready);
+      w.innerHTML = `<button class="btn danger block" data-act="stop" ${ready ? '' : 'disabled'} style="font-size:22px;padding:14px">✋ STOP!${ready ? '' : ' <span class="small" style="font-weight:700">(fill every box first)</span>'}</button>`;
+      $('[data-act=stop]').onclick = e => { e.target.closest('button').disabled = true; callStop(ME); };
+    }
+  } else if (!w.firstChild) {
+    w.innerHTML = `<div class="card muted" style="text-align:center;margin:0">Round ends when the timer runs out. Keep writing!</div>`;
+  }
+}
+
+let revealed = 0;
+function updatePlay(stateChanged) {
+  if (!$('#tile')) return;
+  const now = backend.now(), counting = now < room.startsAt, stopped = room.state === 'stopping';
+  // countdown overlay / letter reveal
+  const ov = $('#ov');
+  if (counting) {
+    const n = Math.ceil((room.startsAt - now) / 1000);
+    ov.innerHTML = `<div class="overlay"><div><div class="muted" style="font-weight:800">Round ${room.round} · get ready</div><div class="big">${n}</div></div></div>`;
+  } else if (stopped) {
+    if (stateChanged || !ov.dataset.stop) {
+      ov.dataset.stop = '1';
+      const who = room.stoppedBy === 'time' ? "Time's up!" : room.stoppedBy === ME ? 'You called STOP!' : `${esc(nameOf(room.stoppedBy))} called STOP!`;
+      ov.innerHTML = `<div class="overlay"><div><div class="stamp">STOP!</div><p style="font-weight:900;font-size:20px;margin-top:22px">${who}</p><p class="muted">Pens down. Collecting answers…</p></div></div>`;
+      navigator.vibrate && navigator.vibrate(150);
+    }
+  } else if (ov.innerHTML) { ov.innerHTML = ''; delete ov.dataset.stop; }
+
+  const tile = $('#tile');
+  if (!counting && revealed !== room.round) {
+    revealed = room.round;
+    tile.textContent = room.letter; tile.classList.remove('pop'); void tile.offsetWidth; tile.classList.add('pop');
+    $('#letterword').textContent = `the letter ${room.letter}`;
+    const first = $('#sheet input');
+    $('#sheet').querySelectorAll('input').forEach(i => i.disabled = false);
+    if (first && !matchMedia('(pointer:coarse)').matches) first.focus();
+  } else if (!counting) { tile.textContent = room.letter; $('#letterword').textContent = `the letter ${room.letter}`; }
+
+  const inputs = $('#sheet').querySelectorAll('input');
+  if (stopped) { inputs.forEach(i => i.disabled = true); document.activeElement?.blur?.(); }
+  else if (!counting) inputs.forEach(i => { if (i.disabled) i.disabled = false; });
+
+  if (stopped && !local.flushed) { local.flushed = true; flushAnswers(); }
+
+  // timer
+  const tm = $('#timer');
+  if (room.endsAt) {
+    const left = Math.max(0, Math.ceil(((stopped ? Math.min(room.stopAt || now, room.endsAt) : room.endsAt) - Math.max(now, room.startsAt)) / 1000));
+    tm.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+    tm.classList.toggle('low', !stopped && !counting && left <= 10);
+  } else tm.textContent = '∞';
+
+  // other players' progress
+  const ans = room.answers?.[rk(room.round)] || {}, total = cats().length;
+  $('#progress').innerHTML = online().map(p => {
+    const filled = p.id === ME ? cats().filter((_, i) => String(local.answers['c' + i] || '').trim()).length : Object.keys(ans[p.id] || {}).length;
+    return `<span class="pl">${avatar(p)}${esc(p.name)} <span class="${filled >= total ? 'done-dot' : 'muted'}">${filled >= total ? '✓' : `${filled}/${total}`}</span></span>`;
+  }).join('');
+  paintStop();
+}
+
+/* ---------- Review ---------- */
+function renderReview() { scoringMode() === 'swap' ? renderSwapReview() : renderVoteReview(); }
+
+function renderVoteReview() {
+  const res = computeRound(room.round), ps = participants(room.round), L = room.letter, h = isHost();
+  const rej = room.rejects?.[rk(room.round)] || {};
+  app.innerHTML = `
+    <div class="topbar"><span class="tag">Round ${room.round} · Review</span><span class="muted small">Letter <b>${L}</b></span></div>
+    <div class="card"><b>Check each other's answers.</b> <span class="muted">Tap ✗ on anything that doesn't count. It's out if most of the other players vote it out.</span></div>
+    ${cats().map((c, i) => {
+      const k = 'c' + i;
+      return `<div class="card cat-card"><h3>${esc(c)}</h3>${ps.map(p => {
+        const r = res[p.id][k], mine = !!rej[p.id]?.[k]?.[ME];
+        const cls = !r.a ? 'empty' : (!r.ok ? 'bad' : '');
+        const why = !r.a ? 'no answer' : !r.letterOk ? `doesn't start with ${L}` : r.rejected ? 'voted out' : '';
+        const canVote = r.a && r.letterOk && p.id !== ME;
+        return `<div class="ans-row">
+          <div class="ans-name">${avatar(p)}<span class="nm">${esc(p.name)}</span></div>
+          <div><div class="ans-text ${cls}">${r.a ? esc(r.a) : 'no answer'}</div>${why && r.a ? `<div class="small muted">${why}</div>` : ''}</div>
+          <button class="vote ${mine ? 'on' : ''}" data-vote="${p.id}" data-k="${k}" ${canVote ? '' : 'disabled'}>${canVote ? `✗${r.votes.length ? ' ' + r.votes.length : ''}` : (p.id === ME && r.votes.length ? `✗ ${r.votes.length}` : '')}</button>
+          <div class="pts p${r.pts}">${r.pts}</div>
+        </div>`;
+      }).join('')}</div>`;
+    }).join('')}
+    <div class="sticky-bottom">${h ? `<button class="btn go block" data-act="lock">Lock in scores →</button>` : `<div class="card" style="text-align:center;margin:0"><b>Waiting for ${esc(nameOf(hostId()))} to lock in scores…</b></div>`}</div>`;
+  app.querySelectorAll('[data-vote]').forEach(b => b.onclick = () => {
+    const pid = b.dataset.vote, k = b.dataset.k, on = !!rej[pid]?.[k]?.[ME];
+    backend.set(roomPath(`rejects/${rk(room.round)}/${pid}/${k}/${ME}`), on ? null : true);
+  });
+  const lk = $('[data-act=lock]'); if (lk) lk.onclick = () => { lk.disabled = true; lockScores(); };
+}
+
+let autoLocked = 0;
+function renderSwapReview() {
+  const r = room.round, res = computeRound(r), L = room.letter, h = isHost();
+  const asg = room.assign?.[rk(r)] || markerMap(r);
+  const marks = room.marks?.[rk(r)] || {};
+  const target = Object.keys(asg).find(t => asg[t] === ME);
+  const targets = Object.keys(asg);
+  const doneCount = targets.filter(t => marks[t]?.done).length;
+  const allDone = targets.length > 0 && doneCount === targets.length;
+  const myMarker = asg[ME];
+  const tp = target && { id: target, ...(room.players?.[target] || { name: 'Someone' }) };
+  const hint = c => !c.a ? 'Blank' : !c.letterOk ? `Doesn't start with ${L}` : c.same.length ? `Same as ${c.same.map(nameOf).map(esc).join(', ')}` : 'Nobody else wrote this';
+  const markCard = !tp ? '' : `
+    <div class="card">
+      <div class="row" style="flex-wrap:nowrap;margin-bottom:4px">${avatar(tp)}<h3>You're marking ${target === ME ? 'your own' : esc(tp.name) + "'s"} sheet</h3></div>
+      <p class="muted small" style="margin:0 0 6px">Points are pre-filled with a suggestion. Tap 10, 5 or 0 to change any of them.</p>
+      ${cats().map((c, i) => {
+        const k = 'c' + i, x = res[target][k];
+        return `<div class="mark-row">
+          <div class="mark-q"><div class="lbl" style="margin:0">${esc(c)}</div>
+            <div class="ans-text ${x.a ? (x.pts ? '' : 'bad') : 'empty'}">${x.a ? esc(x.a) : 'no answer'}</div>
+            <div class="small muted">${hint(x)}${x.marked && x.pts !== x.sug ? ` · suggested ${x.sug}` : ''}</div></div>
+          <div class="ptsel">${[10, 5, 0].map(v => `<button data-mark="${k}" data-v="${v}" class="p${v} ${x.pts === v ? 'on' : ''}">${v}</button>`).join('')}</div>
+        </div>`;
+      }).join('')}
+      <div class="spread" style="margin-top:12px"><div style="font-weight:900;font-size:20px">Total: ${res[target].t}</div>
+        <button class="btn ${marks[target]?.done ? '' : 'go'}" data-act="done">${marks[target]?.done ? '✓ Marked (tap to reopen)' : '✓ Done marking'}</button></div>
+    </div>`;
+  const mine = res[ME] && myMarker && myMarker !== ME ? `
+    <div class="card">
+      <div class="spread"><h3>Your sheet</h3><span class="muted small">being marked by <b>${esc(nameOf(myMarker))}</b> ${marks[ME]?.done ? '✓' : '…'}</span></div>
+      ${cats().map((c, i) => { const x = res[ME]['c' + i]; return `<div class="ans-row" style="grid-template-columns:minmax(80px,auto) 1fr auto"><div class="ans-name">${esc(c)}</div><div class="ans-text ${x.a ? (x.pts ? '' : 'bad') : 'empty'}">${x.a ? esc(x.a) : 'no answer'}</div><div class="pts p${x.pts}">${x.pts}</div></div>`; }).join('')}
+      <div style="text-align:right;font-weight:900;font-size:18px;margin-top:6px">Total so far: ${res[ME].t}</div>
+    </div>` : '';
+  app.innerHTML = `
+    <div class="topbar"><span class="tag">Round ${r} · Swap & mark</span><span class="muted small">Letter <b>${L}</b></span></div>
+    ${markCard}
+    ${mine}
+    <div class="card"><label class="lbl">Marking progress (${doneCount}/${targets.length})</label>
+      ${targets.map(t => `<div class="row small" style="padding:4px 0;font-weight:700">${marks[t]?.done ? '<span class="done-dot">✓</span>' : '<span class="muted">…</span>'} ${esc(nameOf(asg[t]))} <span class="muted">is marking</span> ${esc(nameOf(t))}</div>`).join('')}
+    </div>
+    <div class="sticky-bottom">${h
+      ? `<button class="btn go block" data-act="lock">${allDone ? 'Lock in scores →' : `Lock in scores now (${doneCount}/${targets.length} marked)`}</button>`
+      : `<div class="card" style="text-align:center;margin:0"><b>${allDone ? 'All marked! Waiting for the host…' : 'Scores lock when everyone has finished marking'}</b></div>`}</div>`;
+  app.querySelectorAll('[data-mark]').forEach(b => b.onclick = () => {
+    backend.update(roomPath(`marks/${rk(r)}/${target}`), { [b.dataset.mark]: +b.dataset.v, done: null });
+  });
+  const dn = $('[data-act=done]'); if (dn) dn.onclick = () => backend.set(roomPath(`marks/${rk(r)}/${target}/done`), marks[target]?.done ? null : true);
+  const lk = $('[data-act=lock]'); if (lk) lk.onclick = () => {
+    if (!allDone && !confirm('Not everyone has finished marking. Unmarked answers will get the suggested points. Lock in anyway?')) return;
+    lk.disabled = true; lockScores();
+  };
+  if (h && allDone && autoLocked !== r) { autoLocked = r; setTimeout(() => { if (room.state === 'review' && room.round === r) lockScores(); }, 1200); }
+}
+
+/* ---------- Results ---------- */
+function renderResults() {
+  const rs = room.roundScores?.[rk(room.round)] || {}, ans = room.answers?.[rk(room.round)] || {};
+  const lb = leaderboard(), h = isHost(), last = room.round >= room.settings.rounds;
+  const asg = scoringMode() === 'swap' ? (room.assign?.[rk(room.round)] || {}) : {};
+  const rows = players().filter(p => rs[p.id]).sort((a, b) => rs[b.id].t - rs[a.id].t);
+  app.innerHTML = `
+    <div class="topbar"><span class="tag">Round ${room.round} of ${room.settings.rounds} · Results</span><span class="muted small">Letter <b>${room.letter}</b></span></div>
+    <div class="card">
+      <h3 style="margin-bottom:8px">This round</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Player</th>${cats().map(c => `<th>${esc(c)}</th>`).join('')}<th>Total</th></tr></thead>
+        <tbody>${rows.map(p => `<tr><td><div class="ans-name">${avatar(p)}<span class="nm">${esc(p.name)}</span></div>${asg[p.id] && asg[p.id] !== p.id ? `<div class="s">marked by ${esc(nameOf(asg[p.id]))}</div>` : ''}</td>${cats().map((_, i) => `<td><div class="a">${esc(ans[p.id]?.['c' + i] || '—')}</div><div class="s">${rs[p.id]['c' + i] ?? 0} pts</div></td>`).join('')}<td class="tot">${rs[p.id].t}</td></tr>`).join('')}</tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:4px">Leaderboard</h3>
+      ${lb.map((p, i) => `<div class="lb-row"><div class="rank">${rankOf(lb, i)}</div>${avatar(p)}<div class="lb-name">${esc(p.name)}${p.id === ME ? ' <span class="muted small">(you)</span>' : ''}</div><div class="lb-score">${p.score}${rs[p.id]?.t ? `<span class="delta">+${rs[p.id].t}</span>` : ''}</div></div>`).join('')}
+    </div>
+    <div class="sticky-bottom">${h
+      ? `<button class="btn ${last ? 'primary' : 'go'} block" data-act="next">${last ? '🏆 See final results' : `▶ Next round (${room.round + 1} of ${room.settings.rounds})`}</button>`
+      : `<div class="card" style="text-align:center;margin:0"><b>Waiting for ${esc(nameOf(hostId()))}…</b></div>`}</div>`;
+  const nx = $('[data-act=next]');
+  if (nx) nx.onclick = () => { nx.disabled = true; last ? backend.update(roomPath(), { state: 'final' }) : startRound(); };
+}
+
+/* ---------- Final ---------- */
+function renderFinal(fresh) {
+  const lb = leaderboard(), h = isHost();
+  const top = lb.slice(0, 3);
+  const order = [top[1], top[0], top[2]].filter(Boolean);
+  const heights = { 0: 130, 1: 95, 2: 70 }, colors = { 0: 'var(--yellow)', 1: '#dfe3ea', 2: '#f0c9a0' };
+  const winners = lb.filter(p => p.score === lb[0]?.score);
+  app.innerHTML = `
+    <div class="topbar"><span class="tag">Game over</span><button class="btn ghost small" data-act="leave">Leave room</button></div>
+    <div class="card" style="text-align:center">
+      <div class="brand" style="font-size:48px">${winners.length > 1 ? "It's a tie!" : `${esc(winners[0]?.name || '')} wins!`}</div>
+      <div class="podium">${order.map(p => { const i = lb.indexOf(p); const r = rankOf(lb, i) - 1; return `<div class="pod"><div class="who">${esc(p.name)}</div><div class="sc">${p.score} pts</div><div class="block" style="height:${heights[Math.min(r, 2)]}px;background:${colors[Math.min(r, 2)]}">${r + 1}</div></div>`; }).join('')}</div>
+    </div>
+    <div class="card">${lb.map((p, i) => `<div class="lb-row"><div class="rank">${rankOf(lb, i)}</div>${avatar(p)}<div class="lb-name">${esc(p.name)}${p.id === ME ? ' <span class="muted small">(you)</span>' : ''}</div><div class="lb-score">${p.score}</div></div>`).join('')}</div>
+    <div class="sticky-bottom">${h ? `<button class="btn primary block" data-act="again">🔁 Play again (same room)</button>` : `<div class="card" style="text-align:center;margin:0"><b>${esc(nameOf(hostId()))} can start a new game</b></div>`}</div>`;
+  $('[data-act=leave]').onclick = leaveRoom;
+  const ag = $('[data-act=again]'); if (ag) ag.onclick = () => { ag.disabled = true; playAgain(); };
+  if (fresh) confetti();
+}
+
+function confetti() {
+  for (let i = 0; i < 80; i++) {
+    const c = document.createElement('div'); c.className = 'confetti';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.background = AV_COLORS[i % AV_COLORS.length];
+    c.style.animationDuration = 2 + Math.random() * 2.5 + 's';
+    c.style.animationDelay = Math.random() * .8 + 's';
+    c.style.borderRadius = Math.random() > .5 ? '50%' : '2px';
+    document.body.appendChild(c); setTimeout(() => c.remove(), 5500);
+  }
+}
+
+/* ============================ Game clock ============================ */
+setInterval(() => {
+  if (!room || !code) return;
+  const now = backend.now();
+  if (room.state === 'playing' || room.state === 'stopping') updatePlay(false);
+  // Anyone can end the round when the timer runs out (idempotent).
+  if (room.state === 'playing' && room.endsAt && now >= room.endsAt + 300) callStop('time');
+  // Host moves everyone to review once answers have had time to arrive.
+  if (room.state === 'stopping' && isHost() && now >= (room.stopAt || 0) + STOP_GRACE_MS && !tickBusy) {
+    tickBusy = true; backend.update(roomPath(), { state: 'review', [`assign/${rk(room.round)}`]: markerMap(room.round) }).finally(() => tickBusy = false);
+  }
+}, 250);
+let tickBusy = false;
+
+/* ============================ Boot ============================ */
+(async () => {
+  app.innerHTML = '<p class="muted">Loading…</p>';
+  try { await initBackend(); }
+  catch (err) { console.error(err); app.innerHTML = `<div class="card"><b>Couldn't connect to Firebase.</b><p class="muted">${esc(err.message)}</p><p class="muted small">Check the firebaseConfig in index.html (it needs a databaseURL).</p></div>`; return; }
+  const saved = store.room, hash = (location.hash || '').slice(1).toUpperCase();
+  if (saved && store.name && (!hash || hash === saved) && await joinRoom(saved, store.name, true)) return;
+  store.room = null;
+  renderHome();
+})();
+</script>
+</body>
+</html>
