@@ -204,6 +204,7 @@ async function initBackend() {
       update: (p, v) => fb.update(fb.ref(db, p), v),
       on: (p, cb) => fb.onValue(fb.ref(db, p), s => cb(s.val())),
       onDisconnectSet: (p, v) => fb.onDisconnect(fb.ref(db, p)).set(v),
+      onConnected: cb => fb.onValue(fb.ref(db, '.info/connected'), s => cb(!!s.val())),
     };
   } else {
     backend = makeLocalBackend();
@@ -238,6 +239,7 @@ function makeLocalBackend() {
     update: (p, obj) => { const t = read(); for (const [k, v] of Object.entries(obj)) setPath(t, p + '/' + k, v); return commit(t); },
     on: (p, cb) => { const s = { p, cb, last: undefined }; subs.add(s); setTimeout(notify, 0); return () => subs.delete(s); },
     onDisconnectSet: (p, v) => { window.addEventListener('pagehide', () => { const t = read(); if (getPath(t, p.split('/').slice(0, -1).join('/'))) { setPath(t, p, v); localStorage.setItem(KEY, JSON.stringify(t)); ch && ch.postMessage(1); } }); },
+    onConnected: cb => { setTimeout(() => cb(true), 0); return () => {}; },
   };
 }
 
@@ -274,6 +276,8 @@ function toast(msg, ms = 2200) {
 const roomPath = (p = '') => `${ROOT}${code}${p ? '/' + p : ''}`;
 const players = () => Object.entries(room?.players || {}).map(([id, p]) => ({ id, ...p })).sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
 const online = () => players().filter(p => p.online);
+const inRoom = () => players().filter(p => !p.left);   // includes players who are "away" (app in background)
+const awayTag = p => p.online ? '' : ' <span class="muted small">(away)</span>';
 function hostId() {
   const ps = room?.players || {};
   if (ps[room.host]?.online) return room.host;
@@ -292,7 +296,7 @@ function genCode() { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; let c = ''; for (let 
 function participants(r) {
   const ans = room.answers?.[rk(r)] || {};
   const asg = room.assign?.[rk(r)] || {};
-  return players().filter(p => p.online || ans[p.id] || asg[p.id]);
+  return players().filter(p => ans[p.id] || asg[p.id] || !p.left);
 }
 
 const scoringMode = () => room.settings.scoring || 'swap';
@@ -301,8 +305,18 @@ const scoringMode = () => room.settings.scoring || 'swap';
 function markerMap(r) {
   const ids = participants(r).map(p => p.id), n = ids.length, m = {};
   if (n < 2) { ids.forEach(id => m[id] = id); return m; }
-  const off = ((r - 1) % (n - 1)) + 1;
-  ids.forEach((id, i) => { m[ids[(i + off) % n]] = id; });
+  const on = ids.filter(id => room.players?.[id]?.online);
+  if (on.length === n || on.length === 0) {
+    const off = ((r - 1) % (n - 1)) + 1;
+    ids.forEach((id, i) => { m[ids[(i + off) % n]] = id; });
+    return m;
+  }
+  // Someone is away: share their marking out among the players who are here.
+  ids.forEach((t, i) => {
+    let j = (i + r) % on.length, tries = 0;
+    while (on[j] === t && on.length > 1 && tries++ < on.length) j = (j + 1) % on.length;
+    m[t] = on[j];
+  });
   return m;
 }
 
@@ -358,7 +372,7 @@ function totals() {
 }
 function leaderboard() {
   const t = totals();
-  return players().filter(p => p.online || t[p.id] > 0).map(p => ({ ...p, score: t[p.id] || 0 })).sort((a, b) => b.score - a.score);
+  return players().filter(p => !p.left || t[p.id] > 0).map(p => ({ ...p, score: t[p.id] || 0 })).sort((a, b) => b.score - a.score);
 }
 function rankOf(list, i) { let r = i; while (r > 0 && list[r - 1].score === list[i].score) r--; return r + 1; }
 
@@ -383,18 +397,31 @@ async function joinRoom(c, name, silent = false) {
   let final = name;
   const taken = Object.entries(r.players || {}).filter(([id, p]) => id !== ME && p.online).map(([, p]) => p.name.toLowerCase());
   let n = 2; while (taken.includes(final.toLowerCase())) final = `${name} ${n++}`;
-  await backend.update(ROOT + c + '/players/' + ME, { name: final, joinedAt: mine?.joinedAt || backend.now(), online: true });
+  await backend.update(ROOT + c + '/players/' + ME, { name: final, joinedAt: mine?.joinedAt || backend.now(), online: true, left: null });
   enterRoom(c);
   return true;
 }
 
+// Mark me online again (used after the phone comes back from another app).
+function markOnline() {
+  if (!code || !room?.players?.[ME] || room.players[ME].left) return;
+  if (!room.players[ME].online) backend.set(roomPath(`players/${ME}/online`), true);
+}
+
+let connUnsub = null;
 function enterRoom(c) {
   code = c; store.room = c;
   history.replaceState(null, '', '#' + c);
-  backend.onDisconnectSet(roomPath(`players/${ME}/online`), false);
+  connUnsub && connUnsub();
+  // Every time the connection (re)opens: re-arm the "went offline" hook and mark me online again.
+  connUnsub = backend.onConnected(up => {
+    if (!up || code !== c) return;
+    backend.onDisconnectSet(roomPath(`players/${ME}/online`), false);
+    if (room?.players?.[ME] && !room.players[ME].left) backend.set(roomPath(`players/${ME}/online`), true);
+  });
   unsub && unsub();
   unsub = backend.on(ROOT + c, v => {
-    if (!v) { toast('That room has closed'); leaveLocal(); return; }
+    if (!v || !v.settings) { toast('That room has closed'); leaveLocal(); return; }
     room = v; render();
   });
 }
@@ -402,10 +429,11 @@ function enterRoom(c) {
 async function leaveRoom() {
   if (!code) return;
   if (room?.state === 'lobby' && !(totals()[ME] > 0)) await backend.set(roomPath(`players/${ME}`), null);
-  else await backend.set(roomPath(`players/${ME}/online`), false);
+  else await backend.update(roomPath(`players/${ME}`), { online: false, left: true });
   leaveLocal();
 }
 function leaveLocal() {
+  connUnsub && connUnsub(); connUnsub = null;
   unsub && unsub(); unsub = null; code = null; room = null; store.room = null; mounted = ''; lastState = '';
   history.replaceState(null, '', location.pathname);
   renderHome();
@@ -574,9 +602,9 @@ function mountLobby() {
 }
 
 function updateLobby() {
-  const host = hostId(), ps = players().filter(p => p.online), s = room.settings, h = isHost();
+  const host = hostId(), ps = inRoom(), s = room.settings, h = isHost();
   $('#pcount').textContent = `Players (${ps.length})`;
-  $('#plist').innerHTML = ps.map(p => `<span class="pl">${avatar(p)}${esc(p.name)}${p.id === ME ? ' <span class="muted small">(you)</span>' : ''}${p.id === host ? ' <span class="crown" title="Host">👑</span>' : ''}</span>`).join('');
+  $('#plist').innerHTML = ps.map(p => `<span class="pl ${p.online ? '' : 'off'}">${avatar(p)}${esc(p.name)}${awayTag(p)}${p.id === ME ? ' <span class="muted small">(you)</span>' : ''}${p.id === host ? ' <span class="crown" title="Host">👑</span>' : ''}</span>`).join('');
   const seg = (k, opts) => `<div class="seg">${opts.map(([v, l]) => `<button data-set="${k}" data-v="${v}" class="${String(s[k]) === String(v) ? 'on' : ''}" ${h ? '' : 'disabled'}>${l}</button>`).join('')}</div>`;
   const allCats = [...DEFAULT_CATS, ...EXTRA_CATS, ...(s.custom || [])];
   const shownCats = h ? allCats : s.categories;
@@ -715,9 +743,9 @@ function updatePlay(stateChanged) {
 
   // other players' progress
   const ans = room.answers?.[rk(room.round)] || {}, total = cats().length;
-  $('#progress').innerHTML = online().map(p => {
+  $('#progress').innerHTML = inRoom().map(p => {
     const filled = p.id === ME ? cats().filter((_, i) => String(local.answers['c' + i] || '').trim()).length : Object.keys(ans[p.id] || {}).length;
-    return `<span class="pl">${avatar(p)}${esc(p.name)} <span class="${filled >= total ? 'done-dot' : 'muted'}">${filled >= total ? '✓' : `${filled}/${total}`}</span></span>`;
+    return `<span class="pl ${p.online ? '' : 'off'}">${avatar(p)}${esc(p.name)}${p.online ? '' : ' 💤'} <span class="${filled >= total ? 'done-dot' : 'muted'}">${filled >= total ? '✓' : `${filled}/${total}`}</span></span>`;
   }).join('');
   paintStop();
 }
@@ -759,16 +787,18 @@ function renderSwapReview() {
   const r = room.round, res = computeRound(r), L = room.letter, h = isHost();
   const asg = room.assign?.[rk(r)] || markerMap(r);
   const marks = room.marks?.[rk(r)] || {};
-  const target = Object.keys(asg).find(t => asg[t] === ME);
   const targets = Object.keys(asg);
+  const markerAway = t => asg[t] !== ME && !room.players?.[asg[t]]?.online && !marks[t]?.done;
+  const myTargets = targets.filter(t => asg[t] === ME || (h && t !== ME && markerAway(t)));
   const doneCount = targets.filter(t => marks[t]?.done).length;
   const allDone = targets.length > 0 && doneCount === targets.length;
   const myMarker = asg[ME];
-  const tp = target && { id: target, ...(room.players?.[target] || { name: 'Someone' }) };
+
   const hint = c => !c.a ? 'Blank' : !c.letterOk ? `Doesn't start with ${L}` : c.same.length ? `Same as ${c.same.map(nameOf).map(esc).join(', ')}` : 'Nobody else wrote this';
-  const markCard = !tp ? '' : `
+  const markCard = target => { const tp = { id: target, ...(room.players?.[target] || { name: 'Someone' }) }; return `
     <div class="card">
       <div class="row" style="flex-wrap:nowrap;margin-bottom:4px">${avatar(tp)}<h3>You're marking ${target === ME ? 'your own' : esc(tp.name) + "'s"} sheet</h3></div>
+      ${asg[target] !== ME ? `<p class="small" style="margin:0 0 6px"><b>${esc(nameOf(asg[target]))}</b> is away, so you can mark this one for them.</p>` : ''}
       <p class="muted small" style="margin:0 0 6px">Points are pre-filled with a suggestion. Tap 10, 5 or 0 to change any of them.</p>
       ${cats().map((c, i) => {
         const k = 'c' + i, x = res[target][k];
@@ -776,12 +806,12 @@ function renderSwapReview() {
           <div class="mark-q"><div class="lbl" style="margin:0">${esc(c)}</div>
             <div class="ans-text ${x.a ? (x.pts ? '' : 'bad') : 'empty'}">${x.a ? esc(x.a) : 'no answer'}</div>
             <div class="small muted">${hint(x)}${x.marked && x.pts !== x.sug ? ` · suggested ${x.sug}` : ''}</div></div>
-          <div class="ptsel">${[10, 5, 0].map(v => `<button data-mark="${k}" data-v="${v}" class="p${v} ${x.pts === v ? 'on' : ''}">${v}</button>`).join('')}</div>
+          <div class="ptsel">${[10, 5, 0].map(v => `<button data-t="${target}" data-mark="${k}" data-v="${v}" class="p${v} ${x.pts === v ? 'on' : ''}">${v}</button>`).join('')}</div>
         </div>`;
       }).join('')}
       <div class="spread" style="margin-top:12px"><div style="font-weight:900;font-size:20px">Total: ${res[target].t}</div>
-        <button class="btn ${marks[target]?.done ? '' : 'go'}" data-act="done">${marks[target]?.done ? '✓ Marked (tap to reopen)' : '✓ Done marking'}</button></div>
-    </div>`;
+        <button class="btn ${marks[target]?.done ? '' : 'go'}" data-done="${target}">${marks[target]?.done ? '✓ Marked (tap to reopen)' : '✓ Done marking'}</button></div>
+    </div>`; };
   const mine = res[ME] && myMarker && myMarker !== ME ? `
     <div class="card">
       <div class="spread"><h3>Your sheet</h3><span class="muted small">being marked by <b>${esc(nameOf(myMarker))}</b> ${marks[ME]?.done ? '✓' : '…'}</span></div>
@@ -790,18 +820,18 @@ function renderSwapReview() {
     </div>` : '';
   app.innerHTML = `
     <div class="topbar"><span class="tag">Round ${r} · Swap & mark</span><span class="muted small">Letter <b>${L}</b></span></div>
-    ${markCard}
+    ${myTargets.map(markCard).join('')}
     ${mine}
     <div class="card"><label class="lbl">Marking progress (${doneCount}/${targets.length})</label>
-      ${targets.map(t => `<div class="row small" style="padding:4px 0;font-weight:700">${marks[t]?.done ? '<span class="done-dot">✓</span>' : '<span class="muted">…</span>'} ${esc(nameOf(asg[t]))} <span class="muted">is marking</span> ${esc(nameOf(t))}</div>`).join('')}
+      ${targets.map(t => `<div class="row small" style="padding:4px 0;font-weight:700">${marks[t]?.done ? '<span class="done-dot">✓</span>' : '<span class="muted">…</span>'} ${esc(nameOf(asg[t]))}${room.players?.[asg[t]]?.online ? '' : ' 💤'} <span class="muted">is marking</span> ${esc(nameOf(t))}</div>`).join('')}
     </div>
     <div class="sticky-bottom">${h
       ? `<button class="btn go block" data-act="lock">${allDone ? 'Lock in scores →' : `Lock in scores now (${doneCount}/${targets.length} marked)`}</button>`
       : `<div class="card" style="text-align:center;margin:0"><b>${allDone ? 'All marked! Waiting for the host…' : 'Scores lock when everyone has finished marking'}</b></div>`}</div>`;
   app.querySelectorAll('[data-mark]').forEach(b => b.onclick = () => {
-    backend.update(roomPath(`marks/${rk(r)}/${target}`), { [b.dataset.mark]: +b.dataset.v, done: null });
+    backend.update(roomPath(`marks/${rk(r)}/${b.dataset.t}`), { [b.dataset.mark]: +b.dataset.v, done: null });
   });
-  const dn = $('[data-act=done]'); if (dn) dn.onclick = () => backend.set(roomPath(`marks/${rk(r)}/${target}/done`), marks[target]?.done ? null : true);
+  app.querySelectorAll('[data-done]').forEach(b => b.onclick = () => { const t = b.dataset.done; backend.set(roomPath(`marks/${rk(r)}/${t}/done`), marks[t]?.done ? null : true); });
   const lk = $('[data-act=lock]'); if (lk) lk.onclick = () => {
     if (!allDone && !confirm('Not everyone has finished marking. Unmarked answers will get the suggested points. Lock in anyway?')) return;
     lk.disabled = true; lockScores();
@@ -880,6 +910,9 @@ setInterval(() => {
   }
 }, 250);
 let tickBusy = false;
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') markOnline(); });
+window.addEventListener('focus', markOnline);
+window.addEventListener('pageshow', markOnline);
 
 /* ============================ Boot ============================ */
 (async () => {
